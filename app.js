@@ -76,7 +76,7 @@ function buildPromptData() {
 }
 
 function pollinationsUrl(prompt, seed) {
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=768&height=768&seed=${seed}&nologo=true&model=flux`;
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=768&height=768&seed=${seed}&nologo=true&model=turbo`;
 }
 
 /* ── GENERATE ── */
