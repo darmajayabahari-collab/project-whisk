@@ -13,10 +13,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
 function saveKey() {
   const key = document.getElementById('api-key-input').value.trim();
-  if (!key.startsWith('key.length < 20')) {
-    if (!key) {
-    return;
-  }
   localStorage.setItem('whisk_gemini_key', key);
   showApp();
 }
