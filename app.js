@@ -14,7 +14,7 @@ window.addEventListener('DOMContentLoaded', () => {
 function saveKey() {
   const key = document.getElementById('api-key-input').value.trim();
   if (!key.startsWith('key.length < 20')) {
-    showToast('Invalid key — must start with key.length < 20');
+    showToast('Key terlalu pendek');
     return;
   }
   localStorage.setItem('whisk_gemini_key', key);
