@@ -1,40 +1,15 @@
-/* Project Whisk v3 — app.js
-   Model: gemini-2.5-flash-image (500 free images/day) */
+/* Project Whisk — app.js
+   Backend: Puter.js (free, no API key, no signup, GPT Image) */
 
 let promptLog = [];
 let historyImgs = [];
 let activePill = 'Default';
 
 window.addEventListener('DOMContentLoaded', () => {
-  const key = localStorage.getItem('whisk_gemini_key');
-  if (key) showApp();
-});
-
-function saveKey() {
-  const key = document.getElementById('api-key-input').value.trim();
-  if (!key) { showToast('Paste your API key first'); return; }
-  localStorage.setItem('whisk_gemini_key', key);
-  showApp();
-}
-
-function showApp() {
+  // Skip key screen, go straight to app
   document.getElementById('key-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'block';
-}
-
-function changeKey() {
-  localStorage.removeItem('whisk_gemini_key');
-  document.getElementById('key-screen').style.display = 'flex';
-  document.getElementById('app-screen').style.display = 'none';
-  document.getElementById('api-key-input').value = '';
-}
-
-function toggleKeyVisibility() {
-  const input = document.getElementById('api-key-input');
-  const icon  = document.getElementById('eye-icon');
-  if (input.type === 'password') { input.type = 'text'; icon.className = 'ti ti-eye-off'; }
-  else { input.type = 'password'; icon.className = 'ti ti-eye'; }
-}
+});
 
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -84,9 +59,6 @@ function buildPromptData() {
 }
 
 async function generate() {
-  const apiKey = localStorage.getItem('whisk_gemini_key');
-  if (!apiKey) { changeKey(); return; }
-
   const btn       = document.getElementById('gen-btn');
   const statusBar = document.getElementById('status-bar');
   const count     = parseInt(document.getElementById('batch-slider').value);
@@ -109,16 +81,12 @@ async function generate() {
 
   let done = 0;
   await Promise.all(Array.from({ length: count }, (_, i) =>
-    generateOne(data.final, apiKey).then(result => {
+    puter.ai.txt2img(data.final, false).then(imgEl => {
       done++;
       statusBar.textContent = `Generated ${done} / ${count}`;
       const cell = document.getElementById('cell-' + i);
       if (!cell) return;
-      if (result.error) {
-        cell.innerHTML = `<div class="preview-empty" style="height:100%"><i class="ti ti-photo-off"></i><span style="font-size:11px;text-align:center;padding:0 8px">${result.error}</span></div>`;
-        return;
-      }
-      const src = `data:${result.mimeType};base64,${result.image}`;
+      const src = imgEl.src;
       cell.className = 'result-card';
       cell.innerHTML = `
         <img src="${src}" alt="Generated image ${i+1}" loading="lazy" />
@@ -126,36 +94,16 @@ async function generate() {
           <button class="ov-btn" onclick="dlImg('${src}',${i})" title="Download"><i class="ti ti-download"></i></button>
           <button class="ov-btn" onclick="saveHistory('${src}')" title="Save"><i class="ti ti-bookmark"></i></button>
         </div>`;
+    }).catch(err => {
+      done++;
+      const cell = document.getElementById('cell-' + i);
+      if (cell) cell.innerHTML = `<div class="preview-empty" style="height:100%"><i class="ti ti-photo-off"></i><span style="font-size:11px;padding:0 8px;text-align:center">${err.message || 'Failed'}</span></div>`;
     })
   ));
 
   btn.disabled = false;
   btn.innerHTML = '<i class="ti ti-wand"></i> Generate';
   statusBar.textContent = `Done — ${done} image${done > 1 ? 's' : ''} ready.`;
-}
-
-async function generateOne(prompt, apiKey) {
-  try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { responseModalities: ['IMAGE', 'TEXT'] }
-        })
-      }
-    );
-    const data = await res.json();
-    if (data.error) return { error: data.error.message || 'API error' };
-    const parts   = data.candidates?.[0]?.content?.parts || [];
-    const imgPart = parts.find(p => p.inlineData);
-    if (!imgPart) return { error: 'No image returned' };
-    return { image: imgPart.inlineData.data, mimeType: imgPart.inlineData.mimeType };
-  } catch (err) {
-    return { error: 'Network error' };
-  }
 }
 
 function dlImg(src, idx) {

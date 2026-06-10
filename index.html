@@ -7,32 +7,16 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪄</text></svg>" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" />
+<script src="https://js.puter.com/v2/"></script>
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<!-- API KEY SCREEN -->
-<div id="key-screen" class="key-screen">
-  <div class="key-box">
-    <div class="key-logo">Project Whisk</div>
-    <h1>Enter your Gemini API Key</h1>
-    <p>Your key is stored only in your browser. Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a> — 500 free images/day.</p>
-    <div class="key-input-wrap">
-      <input type="password" id="api-key-input" placeholder="AIza..." autocomplete="off" />
-      <button class="show-btn" onclick="toggleKeyVisibility()" aria-label="Toggle visibility"><i class="ti ti-eye" id="eye-icon"></i></button>
-    </div>
-    <button class="start-btn" onclick="saveKey()"><i class="ti ti-wand"></i> Start generating</button>
-    <p class="key-note"><i class="ti ti-lock"></i> Key never leaves your browser. Stored in localStorage.</p>
-  </div>
-</div>
-
-<!-- APP -->
-<div id="app-screen" style="display:none">
+<div id="app-screen">
   <nav>
     <div class="nav-logo">Project Whisk</div>
     <div class="nav-right">
-      <span class="nav-badge"><i class="ti ti-bolt"></i> Gemini · Free</span>
-      <button class="btn-icon" onclick="changeKey()" title="Change API key" aria-label="Change key"><i class="ti ti-key"></i></button>
+      <span class="nav-badge"><i class="ti ti-bolt"></i> Free · No Key Required</span>
     </div>
   </nav>
 
@@ -71,7 +55,7 @@
 
     <div class="extra-row">
       <label for="extra-prompt">Extra instructions <span class="muted">(optional)</span></label>
-      <textarea id="extra-prompt" placeholder="e.g. flat vector illustration, minimalist, white background, pastel colors — perfect for Adobe Stock"></textarea>
+      <textarea id="extra-prompt" placeholder="e.g. flat vector illustration, minimalist, white background, pastel colors"></textarea>
     </div>
 
     <div class="controls-row">
