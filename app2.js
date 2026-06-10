@@ -1,4 +1,5 @@
-/* Project Whisk v3 — app.js */
+/* Project Whisk v3 — app.js
+   Model: gemini-2.5-flash-image (500 free images/day) */
 
 let promptLog = [];
 let historyImgs = [];
@@ -31,13 +32,8 @@ function changeKey() {
 function toggleKeyVisibility() {
   const input = document.getElementById('api-key-input');
   const icon  = document.getElementById('eye-icon');
-  if (input.type === 'password') {
-    input.type = 'text';
-    icon.className = 'ti ti-eye-off';
-  } else {
-    input.type = 'password';
-    icon.className = 'ti ti-eye';
-  }
+  if (input.type === 'password') { input.type = 'text'; icon.className = 'ti ti-eye-off'; }
+  else { input.type = 'password'; icon.className = 'ti ti-eye'; }
 }
 
 function showToast(msg) {
@@ -56,8 +52,7 @@ function togglePill(el) {
 
 const emptyIcons = { subject: 'ti-user-circle', scene: 'ti-mountain', style: 'ti-brush' };
 function getEmpty(slot) {
-  const label = slot.charAt(0).toUpperCase() + slot.slice(1);
-  return `<div class="preview-empty"><i class="ti ${emptyIcons[slot]}"></i><span>${label}</span></div>`;
+  return `<div class="preview-empty"><i class="ti ${emptyIcons[slot]}"></i><span>${slot.charAt(0).toUpperCase()+slot.slice(1)}</span></div>`;
 }
 function previewUrl(slot) {
   const url = document.getElementById('url-' + slot).value.trim();
@@ -100,7 +95,6 @@ async function generate() {
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner"></div>';
   statusBar.textContent = `Generating ${count} image${count > 1 ? 's' : ''}...`;
-
   addToLog(data);
 
   const cols = count <= 2 ? count : count <= 4 ? 2 : count <= 6 ? 3 : 4;
@@ -127,9 +121,9 @@ async function generate() {
       const src = `data:${result.mimeType};base64,${result.image}`;
       cell.className = 'result-card';
       cell.innerHTML = `
-        <img src="${src}" alt="Generated image ${i + 1}" loading="lazy" />
+        <img src="${src}" alt="Generated image ${i+1}" loading="lazy" />
         <div class="result-overlay">
-          <button class="ov-btn" onclick="dlImg('${src}', ${i})" title="Download"><i class="ti ti-download"></i></button>
+          <button class="ov-btn" onclick="dlImg('${src}',${i})" title="Download"><i class="ti ti-download"></i></button>
           <button class="ov-btn" onclick="saveHistory('${src}')" title="Save"><i class="ti ti-bookmark"></i></button>
         </div>`;
     })
@@ -143,7 +137,7 @@ async function generate() {
 async function generateOne(prompt, apiKey) {
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -166,8 +160,7 @@ async function generateOne(prompt, apiKey) {
 
 function dlImg(src, idx) {
   const a = document.createElement('a');
-  a.href = src;
-  a.download = 'whisk-' + Date.now() + '-' + idx + '.png';
+  a.href = src; a.download = 'whisk-' + Date.now() + '-' + idx + '.png';
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
@@ -179,14 +172,11 @@ function saveHistory(src) {
   showToast('Saved');
 }
 function renderHistory() {
-  const sec  = document.getElementById('history-section');
+  const sec = document.getElementById('history-section');
   const grid = document.getElementById('history-grid');
   if (!historyImgs.length) { sec.style.display = 'none'; return; }
   sec.style.display = 'block';
-  grid.innerHTML = historyImgs.map(u =>
-    `<div class="history-thumb" onclick="window.open('${u}','_blank')">
-      <img src="${u}" alt="History" loading="lazy" />
-    </div>`).join('');
+  grid.innerHTML = historyImgs.map(u => `<div class="history-thumb" onclick="window.open('${u}','_blank')"><img src="${u}" loading="lazy" /></div>`).join('');
 }
 function clearHistory() { historyImgs = []; renderHistory(); }
 
@@ -203,18 +193,14 @@ function renderLog() {
   if (!promptLog.length) { sec.style.display = 'none'; return; }
   sec.style.display = 'block';
   list.innerHTML = [...promptLog].reverse().map((e, i) => {
-    const num  = promptLog.length - i;
+    const num = promptLog.length - i;
     const rows = [
       e.subject ? `<div><span class="log-entry-key">subject: </span><span class="log-entry-val">${e.subject}</span></div>` : '',
       e.scene   ? `<div><span class="log-entry-key">scene: </span><span class="log-entry-val">${e.scene}</span></div>`   : '',
       e.style   ? `<div><span class="log-entry-key">style: </span><span class="log-entry-val">${e.style}</span></div>`   : '',
       e.extra   ? `<div><span class="log-entry-key">extra: </span><span class="log-entry-val">${e.extra}</span></div>`   : '',
     ].filter(Boolean).join('');
-    return `<div class="log-entry">
-      <div class="log-entry-meta">#${num} · ${e.styleTag}</div>
-      ${rows}
-      <div><span class="log-entry-key">final: </span><span class="log-entry-final">${e.final}</span></div>
-    </div>`;
+    return `<div class="log-entry"><div class="log-entry-meta">#${num} · ${e.styleTag}</div>${rows}<div><span class="log-entry-key">final: </span><span class="log-entry-final">${e.final}</span></div></div>`;
   }).join('');
 }
 function clearLog() {
