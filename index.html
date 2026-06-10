@@ -5,134 +5,135 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Project Whisk — AI Image Remixer</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪄</text></svg>" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" />
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<nav>
-  <div class="nav-logo">Project Whisk</div>
-  <div class="nav-right">
-    <span class="nav-badge"><i class="ti ti-bolt"></i> Pollinations.ai · Free</span>
-    <button class="btn-icon" onclick="toggleHelp()" title="How to use" aria-label="Help"><i class="ti ti-help"></i></button>
-    <a class="btn-icon" href="https://github.com/YOUR_USERNAME/project-whisk" target="_blank" title="GitHub" aria-label="GitHub"><i class="ti ti-brand-github"></i></a>
+<!-- API KEY SCREEN -->
+<div id="key-screen" class="key-screen">
+  <div class="key-box">
+    <div class="key-logo">Project Whisk</div>
+    <h1>Enter your Gemini API Key</h1>
+    <p>Your key is stored only in your browser. Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a> — 500 free images/day.</p>
+    <div class="key-input-wrap">
+      <input type="password" id="api-key-input" placeholder="AIza..." autocomplete="off" />
+      <button class="show-btn" onclick="toggleKeyVisibility()" aria-label="Toggle visibility"><i class="ti ti-eye" id="eye-icon"></i></button>
+    </div>
+    <button class="start-btn" onclick="saveKey()"><i class="ti ti-wand"></i> Start generating</button>
+    <p class="key-note"><i class="ti ti-lock"></i> Key never leaves your browser. Stored in localStorage.</p>
   </div>
-</nav>
+</div>
 
-<main>
-  <div class="hero">
-    <h1>Remix images with AI</h1>
-    <p>Paste image URLs for subject, scene, and style — Project Whisk blends them into something new.</p>
-  </div>
+<!-- APP -->
+<div id="app-screen" style="display:none">
+  <nav>
+    <div class="nav-logo">Project Whisk</div>
+    <div class="nav-right">
+      <span class="nav-badge"><i class="ti ti-bolt"></i> Gemini · Free</span>
+      <button class="btn-icon" onclick="changeKey()" title="Change API key" aria-label="Change key"><i class="ti ti-key"></i></button>
+    </div>
+  </nav>
 
-  <div id="help-panel" class="help-panel" style="display:none">
-    <strong>How to use</strong>
-    <ol>
-      <li>Paste image URLs into Subject, Scene, and/or Style — preview loads automatically.</li>
-      <li>Add optional extra instructions (e.g. "flat vector, white background, minimal").</li>
-      <li>Pick a style pill and set batch count (1–8 images at once).</li>
-      <li>Click <strong>Generate</strong> — images appear as they load.</li>
-      <li>Hover any result to download or save to history.</li>
-      <li>Every session is logged automatically. Click <strong>Export .txt</strong> to download prompts for ComfyUI.</li>
-    </ol>
-  </div>
+  <main>
+    <div class="hero">
+      <h1>Remix images with AI</h1>
+      <p>Paste image URLs for subject, scene, and style — Project Whisk blends them into something new.</p>
+    </div>
 
-  <div class="input-grid">
-    <div class="slot-card">
-      <div class="slot-label"><i class="ti ti-user"></i> Subject</div>
-      <p class="slot-desc">The main object or person.</p>
-      <input type="url" class="url-input" id="url-subject" placeholder="https://..." oninput="previewUrl('subject')" />
-      <div class="preview-box" id="preview-subject">
-        <div class="preview-empty"><i class="ti ti-user-circle"></i><span>Subject</span></div>
+    <div class="input-grid">
+      <div class="slot-card">
+        <div class="slot-label"><i class="ti ti-user"></i> Subject</div>
+        <p class="slot-desc">The main object or person.</p>
+        <input type="url" class="url-input" id="url-subject" placeholder="https://..." oninput="previewUrl('subject')" />
+        <div class="preview-box" id="preview-subject">
+          <div class="preview-empty"><i class="ti ti-user-circle"></i><span>Subject</span></div>
+        </div>
+      </div>
+      <div class="slot-card">
+        <div class="slot-label"><i class="ti ti-photo"></i> Scene</div>
+        <p class="slot-desc">Background or environment.</p>
+        <input type="url" class="url-input" id="url-scene" placeholder="https://..." oninput="previewUrl('scene')" />
+        <div class="preview-box" id="preview-scene">
+          <div class="preview-empty"><i class="ti ti-mountain"></i><span>Scene</span></div>
+        </div>
+      </div>
+      <div class="slot-card">
+        <div class="slot-label"><i class="ti ti-palette"></i> Style</div>
+        <p class="slot-desc">Visual style reference.</p>
+        <input type="url" class="url-input" id="url-style" placeholder="https://..." oninput="previewUrl('style')" />
+        <div class="preview-box" id="preview-style">
+          <div class="preview-empty"><i class="ti ti-brush"></i><span>Style</span></div>
+        </div>
       </div>
     </div>
-    <div class="slot-card">
-      <div class="slot-label"><i class="ti ti-photo"></i> Scene</div>
-      <p class="slot-desc">Background or environment.</p>
-      <input type="url" class="url-input" id="url-scene" placeholder="https://..." oninput="previewUrl('scene')" />
-      <div class="preview-box" id="preview-scene">
-        <div class="preview-empty"><i class="ti ti-mountain"></i><span>Scene</span></div>
+
+    <div class="extra-row">
+      <label for="extra-prompt">Extra instructions <span class="muted">(optional)</span></label>
+      <textarea id="extra-prompt" placeholder="e.g. flat vector illustration, minimalist, white background, pastel colors — perfect for Adobe Stock"></textarea>
+    </div>
+
+    <div class="controls-row">
+      <div class="batch-wrap">
+        <label>Batch:</label>
+        <input type="range" min="1" max="8" value="4" step="1" id="batch-slider"
+          oninput="document.getElementById('batch-num').textContent=this.value" />
+        <span class="batch-num" id="batch-num">4</span>
+      </div>
+      <div class="pills">
+        <button class="pill active" onclick="togglePill(this)">Default</button>
+        <button class="pill" onclick="togglePill(this)">Flat vector</button>
+        <button class="pill" onclick="togglePill(this)">Watercolor</button>
+        <button class="pill" onclick="togglePill(this)">3D render</button>
+        <button class="pill" onclick="togglePill(this)">Sketch</button>
+        <button class="pill" onclick="togglePill(this)">Anime</button>
+        <button class="pill" onclick="togglePill(this)">Photorealistic</button>
+        <button class="pill" onclick="togglePill(this)">Icon set</button>
       </div>
     </div>
-    <div class="slot-card">
-      <div class="slot-label"><i class="ti ti-palette"></i> Style</div>
-      <p class="slot-desc">Visual style reference.</p>
-      <input type="url" class="url-input" id="url-style" placeholder="https://..." oninput="previewUrl('style')" />
-      <div class="preview-box" id="preview-style">
-        <div class="preview-empty"><i class="ti ti-brush"></i><span>Style</span></div>
+
+    <div class="action-row">
+      <button class="gen-btn" id="gen-btn" onclick="generate()">
+        <i class="ti ti-wand"></i> Generate
+      </button>
+      <div class="export-panel">
+        <div class="ep-header"><i class="ti ti-file-text"></i> Prompt log</div>
+        <div class="ep-counter">
+          <span class="ep-num" id="log-count">0</span>
+          <span class="ep-label">sessions saved</span>
+        </div>
+        <div class="ep-btns">
+          <button class="btn-outline" id="export-btn" onclick="exportTxt()" disabled>
+            <i class="ti ti-download"></i> Export .txt
+          </button>
+          <button class="btn-ghost" onclick="clearLog()">Clear log</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="extra-row">
-    <label for="extra-prompt">Extra instructions <span class="muted">(optional)</span></label>
-    <textarea id="extra-prompt" placeholder="e.g. flat vector illustration, minimalist, white background, pastel colors — perfect for Adobe Stock"></textarea>
-  </div>
+    <div class="status-bar" id="status-bar" aria-live="polite"></div>
+    <div id="results-container"></div>
 
-  <div class="controls-row">
-    <div class="batch-wrap">
-      <label>Batch:</label>
-      <input type="range" min="1" max="8" value="4" step="1" id="batch-slider"
-        oninput="document.getElementById('batch-num').textContent=this.value" />
-      <span class="batch-num" id="batch-num">4</span>
-    </div>
-    <div class="pills" id="pill-group">
-      <button class="pill active" onclick="togglePill(this)">Default</button>
-      <button class="pill" onclick="togglePill(this)">Flat vector</button>
-      <button class="pill" onclick="togglePill(this)">Watercolor</button>
-      <button class="pill" onclick="togglePill(this)">3D render</button>
-      <button class="pill" onclick="togglePill(this)">Sketch</button>
-      <button class="pill" onclick="togglePill(this)">Anime</button>
-      <button class="pill" onclick="togglePill(this)">Photorealistic</button>
-      <button class="pill" onclick="togglePill(this)">Icon set</button>
-    </div>
-  </div>
-
-  <div class="action-row">
-    <button class="gen-btn" id="gen-btn" onclick="generate()">
-      <i class="ti ti-wand"></i> Generate
-    </button>
-    <div class="export-panel">
-      <div class="ep-header"><i class="ti ti-file-text"></i> Prompt log</div>
-      <div class="ep-counter">
-        <span class="ep-num" id="log-count">0</span>
-        <span class="ep-label">sessions saved</span>
+    <div class="log-section" id="log-section" style="display:none">
+      <div class="section-header">
+        <span class="section-title">Prompt log</span>
+        <span class="muted" id="log-total-label"></span>
       </div>
-      <div class="ep-btns">
-        <button class="btn-outline" id="export-btn" onclick="exportTxt()" disabled>
-          <i class="ti ti-download"></i> Export .txt
-        </button>
-        <button class="btn-ghost" onclick="clearLog()">Clear log</button>
+      <div class="log-list" id="log-list"></div>
+    </div>
+
+    <div class="history-section" id="history-section" style="display:none">
+      <div class="section-header">
+        <span class="section-title">History</span>
+        <button class="btn-ghost" onclick="clearHistory()">Clear</button>
       </div>
+      <div class="history-grid" id="history-grid"></div>
     </div>
-  </div>
-
-  <div class="status-bar" id="status-bar" aria-live="polite"></div>
-
-  <div id="results-container"></div>
-
-  <div class="log-section" id="log-section" style="display:none">
-    <div class="section-header">
-      <span class="section-title">Prompt log</span>
-      <span class="muted" id="log-total-label"></span>
-    </div>
-    <div class="log-list" id="log-list"></div>
-  </div>
-
-  <div class="history-section" id="history-section" style="display:none">
-    <div class="section-header">
-      <span class="section-title">History</span>
-      <button class="btn-ghost" onclick="clearHistory()">Clear</button>
-    </div>
-    <div class="history-grid" id="history-grid"></div>
-  </div>
-</main>
+  </main>
+</div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-
 <script src="app.js"></script>
 </body>
 </html>
