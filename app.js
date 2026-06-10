@@ -81,7 +81,7 @@ async function generate() {
 
   let done = 0;
   await Promise.all(Array.from({ length: count }, (_, i) =>
-    puter.ai.txt2img(data.final, false).then(imgEl => {
+    puter.ai.txt2img(data.final, { model: 'google/imagen-4.0-fast' }).then(imgEl => {
       done++;
       statusBar.textContent = `Generated ${done} / ${count}`;
       const cell = document.getElementById('cell-' + i);
