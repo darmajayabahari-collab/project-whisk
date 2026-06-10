@@ -1,11 +1,9 @@
-/* Project Whisk v3 — app.js
-   Gemini API key stored in localStorage, direct browser call */
+/* Project Whisk v3 — app.js */
 
 let promptLog = [];
 let historyImgs = [];
 let activePill = 'Default';
 
-/* ── INIT ── */
 window.addEventListener('DOMContentLoaded', () => {
   const key = localStorage.getItem('whisk_gemini_key');
   if (key) showApp();
@@ -13,6 +11,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 function saveKey() {
   const key = document.getElementById('api-key-input').value.trim();
+  if (!key) { showToast('Paste your API key first'); return; }
   localStorage.setItem('whisk_gemini_key', key);
   showApp();
 }
@@ -41,7 +40,6 @@ function toggleKeyVisibility() {
   }
 }
 
-/* ── HELPERS ── */
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -56,7 +54,6 @@ function togglePill(el) {
   activePill = el.textContent.trim();
 }
 
-/* ── PREVIEW ── */
 const emptyIcons = { subject: 'ti-user-circle', scene: 'ti-mountain', style: 'ti-brush' };
 function getEmpty(slot) {
   const label = slot.charAt(0).toUpperCase() + slot.slice(1);
@@ -74,31 +71,26 @@ function previewUrl(slot) {
   img.onerror = () => { box.innerHTML = getEmpty(slot); };
 }
 
-/* ── PROMPT BUILDER ── */
 function buildPromptData() {
   const subject = document.getElementById('url-subject').value.trim();
   const scene   = document.getElementById('url-scene').value.trim();
   const styleV  = document.getElementById('url-style').value.trim();
   const extra   = document.getElementById('extra-prompt').value.trim();
   const styleTag = activePill !== 'Default' ? activePill + ' style, ' : '';
-
   const parts = [];
   if (subject) parts.push('subject inspired by: ' + subject);
   if (scene)   parts.push('background/scene: ' + scene);
   if (styleV)  parts.push('visual style from: ' + styleV);
   if (!parts.length) parts.push('creative abstract composition');
-
   let final = styleTag + parts.join(', ');
   if (extra) final += ', ' + extra;
   final += ', high quality, detailed';
-
   return { subject, scene, style: styleV, extra, styleTag: activePill, final: final.trim() };
 }
 
-/* ── GENERATE ── */
 async function generate() {
   const apiKey = localStorage.getItem('whisk_gemini_key');
-  if (!apiKey) { showToast('No API key found'); changeKey(); return; }
+  if (!apiKey) { changeKey(); return; }
 
   const btn       = document.getElementById('gen-btn');
   const statusBar = document.getElementById('status-bar');
@@ -107,7 +99,7 @@ async function generate() {
 
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner"></div>';
-  statusBar.textContent = `Generating ${count} image${count > 1 ? 's' : ''}…`;
+  statusBar.textContent = `Generating ${count} image${count > 1 ? 's' : ''}...`;
 
   addToLog(data);
 
@@ -118,38 +110,34 @@ async function generate() {
   container.innerHTML = Array.from({ length: count }, (_, i) => `
     <div class="loading-cell" id="cell-${i}">
       <div class="spinner"></div>
-      <span class="load-text">Generating…</span>
+      <span class="load-text">Generating...</span>
     </div>`).join('');
 
   let done = 0;
-
   await Promise.all(Array.from({ length: count }, (_, i) =>
     generateOne(data.final, apiKey).then(result => {
       done++;
       statusBar.textContent = `Generated ${done} / ${count}`;
       const cell = document.getElementById('cell-' + i);
       if (!cell) return;
-
       if (result.error) {
         cell.innerHTML = `<div class="preview-empty" style="height:100%"><i class="ti ti-photo-off"></i><span style="font-size:11px;text-align:center;padding:0 8px">${result.error}</span></div>`;
-        if (result.error.includes('API key')) changeKey();
         return;
       }
-
       const src = `data:${result.mimeType};base64,${result.image}`;
       cell.className = 'result-card';
       cell.innerHTML = `
         <img src="${src}" alt="Generated image ${i + 1}" loading="lazy" />
         <div class="result-overlay">
-          <button class="ov-btn" onclick="dlImg('${src}', ${i})" title="Download" aria-label="Download"><i class="ti ti-download"></i></button>
-          <button class="ov-btn" onclick="saveHistory('${src}')" title="Save" aria-label="Save"><i class="ti ti-bookmark"></i></button>
+          <button class="ov-btn" onclick="dlImg('${src}', ${i})" title="Download"><i class="ti ti-download"></i></button>
+          <button class="ov-btn" onclick="saveHistory('${src}')" title="Save"><i class="ti ti-bookmark"></i></button>
         </div>`;
     })
   ));
 
   btn.disabled = false;
   btn.innerHTML = '<i class="ti ti-wand"></i> Generate';
-  statusBar.textContent = `Done — ${done} image${done > 1 ? 's' : ''} ready. Prompt saved to log.`;
+  statusBar.textContent = `Done — ${done} image${done > 1 ? 's' : ''} ready.`;
 }
 
 async function generateOne(prompt, apiKey) {
@@ -165,26 +153,17 @@ async function generateOne(prompt, apiKey) {
         })
       }
     );
-
     const data = await res.json();
-
-    if (data.error) {
-      const msg = data.error.message || 'API error';
-      return { error: msg.includes('API key') ? 'Invalid API key' : msg };
-    }
-
-    const parts    = data.candidates?.[0]?.content?.parts || [];
-    const imgPart  = parts.find(p => p.inlineData);
+    if (data.error) return { error: data.error.message || 'API error' };
+    const parts   = data.candidates?.[0]?.content?.parts || [];
+    const imgPart = parts.find(p => p.inlineData);
     if (!imgPart) return { error: 'No image returned' };
-
     return { image: imgPart.inlineData.data, mimeType: imgPart.inlineData.mimeType };
-
   } catch (err) {
     return { error: 'Network error' };
   }
 }
 
-/* ── DOWNLOAD ── */
 function dlImg(src, idx) {
   const a = document.createElement('a');
   a.href = src;
@@ -192,13 +171,12 @@ function dlImg(src, idx) {
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
-/* ── HISTORY ── */
 function saveHistory(src) {
   if (historyImgs.includes(src)) { showToast('Already saved'); return; }
   historyImgs.unshift(src);
   if (historyImgs.length > 16) historyImgs.pop();
   renderHistory();
-  showToast('Saved to history');
+  showToast('Saved');
 }
 function renderHistory() {
   const sec  = document.getElementById('history-section');
@@ -210,9 +188,8 @@ function renderHistory() {
       <img src="${u}" alt="History" loading="lazy" />
     </div>`).join('');
 }
-function clearHistory() { historyImgs = []; renderHistory(); showToast('Cleared'); }
+function clearHistory() { historyImgs = []; renderHistory(); }
 
-/* ── PROMPT LOG ── */
 function addToLog(entry) {
   promptLog.push(entry);
   document.getElementById('log-count').textContent = promptLog.length;
@@ -230,7 +207,7 @@ function renderLog() {
     const rows = [
       e.subject ? `<div><span class="log-entry-key">subject: </span><span class="log-entry-val">${e.subject}</span></div>` : '',
       e.scene   ? `<div><span class="log-entry-key">scene: </span><span class="log-entry-val">${e.scene}</span></div>`   : '',
-      e.style   ? `<div><span class="log-entry-key">style ref: </span><span class="log-entry-val">${e.style}</span></div>` : '',
+      e.style   ? `<div><span class="log-entry-key">style: </span><span class="log-entry-val">${e.style}</span></div>`   : '',
       e.extra   ? `<div><span class="log-entry-key">extra: </span><span class="log-entry-val">${e.extra}</span></div>`   : '',
     ].filter(Boolean).join('');
     return `<div class="log-entry">
@@ -248,7 +225,6 @@ function clearLog() {
   showToast('Log cleared');
 }
 
-/* ── EXPORT TXT ── */
 function exportTxt() {
   if (!promptLog.length) return;
   const lines = promptLog.map(e => {
