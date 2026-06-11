@@ -19,90 +19,202 @@
 <main>
   <div class="hero">
     <h1>Remix images with AI</h1>
-    <p>Paste image URLs for subject, scene, and style — Project Whisk blends them into something new.</p>
+    <p>Paste image URLs for subject, scene, and style — or batch generate from a .txt file.</p>
   </div>
-  <div class="input-grid">
-    <div class="slot-card">
-      <div class="slot-label"><i class="ti ti-user"></i> Subject</div>
-      <p class="slot-desc">The main object or person.</p>
-      <input type="url" class="url-input" id="url-subject" placeholder="https://..." oninput="previewUrl('subject')" />
-      <div class="preview-box" id="preview-subject">
-        <div class="preview-empty"><i class="ti ti-user-circle"></i><span>Subject</span></div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('single')"><i class="ti ti-wand"></i> Single Generate</button>
+    <button class="tab" onclick="switchTab('batch')"><i class="ti ti-list"></i> Batch Generate</button>
+  </div>
+
+  <!-- SINGLE TAB -->
+  <div id="tab-single">
+    <div class="input-grid">
+      <div class="slot-card">
+        <div class="slot-label"><i class="ti ti-user"></i> Subject</div>
+        <p class="slot-desc">The main object or person.</p>
+        <input type="url" class="url-input" id="url-subject" placeholder="https://..." oninput="previewUrl('subject')" />
+        <div class="preview-box" id="preview-subject">
+          <div class="preview-empty"><i class="ti ti-user-circle"></i><span>Subject</span></div>
+        </div>
+      </div>
+      <div class="slot-card">
+        <div class="slot-label"><i class="ti ti-photo"></i> Scene</div>
+        <p class="slot-desc">Background or environment.</p>
+        <input type="url" class="url-input" id="url-scene" placeholder="https://..." oninput="previewUrl('scene')" />
+        <div class="preview-box" id="preview-scene">
+          <div class="preview-empty"><i class="ti ti-mountain"></i><span>Scene</span></div>
+        </div>
+      </div>
+      <div class="slot-card">
+        <div class="slot-label"><i class="ti ti-palette"></i> Style</div>
+        <p class="slot-desc">Visual style reference.</p>
+        <input type="url" class="url-input" id="url-style" placeholder="https://..." oninput="previewUrl('style')" />
+        <div class="preview-box" id="preview-style">
+          <div class="preview-empty"><i class="ti ti-brush"></i><span>Style</span></div>
+        </div>
       </div>
     </div>
-    <div class="slot-card">
-      <div class="slot-label"><i class="ti ti-photo"></i> Scene</div>
-      <p class="slot-desc">Background or environment.</p>
-      <input type="url" class="url-input" id="url-scene" placeholder="https://..." oninput="previewUrl('scene')" />
-      <div class="preview-box" id="preview-scene">
-        <div class="preview-empty"><i class="ti ti-mountain"></i><span>Scene</span></div>
+
+    <div class="extra-row">
+      <label for="extra-prompt">Extra instructions <span class="muted">(optional)</span></label>
+      <textarea id="extra-prompt" placeholder="e.g. flat vector illustration, minimalist, white background, pastel colors"></textarea>
+    </div>
+
+    <div class="controls-row">
+      <div class="batch-wrap">
+        <label>Images per prompt:</label>
+        <div class="num-pills" id="num-pills">
+          <button class="num-pill active" onclick="setCount(this,1)">1</button>
+          <button class="num-pill" onclick="setCount(this,2)">2</button>
+          <button class="num-pill" onclick="setCount(this,3)">3</button>
+          <button class="num-pill" onclick="setCount(this,4)">4</button>
+        </div>
+      </div>
+      <div class="ratio-wrap">
+        <label>Ratio:</label>
+        <div class="ratio-pills">
+          <button class="ratio-pill active" onclick="setRatio(this,'768x768','1:1')">1:1</button>
+          <button class="ratio-pill" onclick="setRatio(this,'768x1024','3:4')">3:4</button>
+          <button class="ratio-pill" onclick="setRatio(this,'1024x768','4:3')">4:3</button>
+          <button class="ratio-pill" onclick="setRatio(this,'576x1024','9:16')">9:16</button>
+          <button class="ratio-pill" onclick="setRatio(this,'1024x576','16:9')">16:9</button>
+          <button class="ratio-pill" onclick="setRatio(this,'832x1216','2:3')">2:3</button>
+        </div>
       </div>
     </div>
-    <div class="slot-card">
-      <div class="slot-label"><i class="ti ti-palette"></i> Style</div>
-      <p class="slot-desc">Visual style reference.</p>
-      <input type="url" class="url-input" id="url-style" placeholder="https://..." oninput="previewUrl('style')" />
-      <div class="preview-box" id="preview-style">
-        <div class="preview-empty"><i class="ti ti-brush"></i><span>Style</span></div>
+
+    <div class="controls-row">
+      <div class="pills">
+        <button class="pill active" onclick="togglePill(this)">Default</button>
+        <button class="pill" onclick="togglePill(this)">Flat vector</button>
+        <button class="pill" onclick="togglePill(this)">Watercolor</button>
+        <button class="pill" onclick="togglePill(this)">3D render</button>
+        <button class="pill" onclick="togglePill(this)">Sketch</button>
+        <button class="pill" onclick="togglePill(this)">Anime</button>
+        <button class="pill" onclick="togglePill(this)">Photorealistic</button>
+        <button class="pill" onclick="togglePill(this)">Icon set</button>
       </div>
     </div>
-  </div>
-  <div class="extra-row">
-    <label for="extra-prompt">Extra instructions <span class="muted">(optional)</span></label>
-    <textarea id="extra-prompt" placeholder="e.g. flat vector illustration, minimalist, white background, pastel colors"></textarea>
-  </div>
-  <div class="controls-row">
-    <div class="batch-wrap">
-      <label>Batch:</label>
-      <input type="range" min="1" max="8" value="4" step="1" id="batch-slider"
-        oninput="document.getElementById('batch-num').textContent=this.value" />
-      <span class="batch-num" id="batch-num">4</span>
-    </div>
-    <div class="pills">
-      <button class="pill active" onclick="togglePill(this)">Default</button>
-      <button class="pill" onclick="togglePill(this)">Flat vector</button>
-      <button class="pill" onclick="togglePill(this)">Watercolor</button>
-      <button class="pill" onclick="togglePill(this)">3D render</button>
-      <button class="pill" onclick="togglePill(this)">Sketch</button>
-      <button class="pill" onclick="togglePill(this)">Anime</button>
-      <button class="pill" onclick="togglePill(this)">Photorealistic</button>
-      <button class="pill" onclick="togglePill(this)">Icon set</button>
-    </div>
-  </div>
-  <div class="action-row">
-    <button class="gen-btn" id="gen-btn" onclick="generate()">
-      <i class="ti ti-wand"></i> Generate
-    </button>
-    <div class="export-panel">
-      <div class="ep-header"><i class="ti ti-file-text"></i> Prompt log</div>
-      <div class="ep-counter">
-        <span class="ep-num" id="log-count">0</span>
-        <span class="ep-label">sessions saved</span>
+
+    <!-- Download settings -->
+    <div class="dl-settings">
+      <div class="dl-field">
+        <label>Filename prefix:</label>
+        <input type="text" id="filename-prefix" placeholder="whisk" value="whisk" />
       </div>
-      <div class="ep-btns">
-        <button class="btn-outline" id="export-btn" onclick="exportTxt()" disabled>
-          <i class="ti ti-download"></i> Export .txt
-        </button>
-        <button class="btn-ghost" onclick="clearLog()">Clear log</button>
+      <div class="dl-field">
+        <label><input type="checkbox" id="auto-download" checked /> Auto-download</label>
       </div>
     </div>
-  </div>
-  <div class="status-bar" id="status-bar" aria-live="polite"></div>
-  <div id="results-container"></div>
-  <div class="log-section" id="log-section" style="display:none">
-    <div class="section-header">
-      <span class="section-title">Prompt log</span>
-      <span class="muted" id="log-total-label"></span>
+
+    <div class="action-row">
+      <button class="gen-btn" id="gen-btn" onclick="generate()">
+        <i class="ti ti-wand"></i> Generate
+      </button>
+      <div class="export-panel">
+        <div class="ep-header"><i class="ti ti-file-text"></i> Prompt log</div>
+        <div class="ep-counter">
+          <span class="ep-num" id="log-count">0</span>
+          <span class="ep-label">sessions</span>
+        </div>
+        <div class="ep-btns">
+          <button class="btn-outline" id="export-btn" onclick="exportTxt()" disabled>
+            <i class="ti ti-download"></i> Export .txt
+          </button>
+          <button class="btn-ghost" onclick="clearLog()">Clear</button>
+        </div>
+      </div>
     </div>
-    <div class="log-list" id="log-list"></div>
-  </div>
-  <div class="history-section" id="history-section" style="display:none">
-    <div class="section-header">
-      <span class="section-title">History</span>
-      <button class="btn-ghost" onclick="clearHistory()">Clear</button>
+
+    <div class="status-bar" id="status-bar" aria-live="polite"></div>
+    <div id="results-container"></div>
+
+    <div class="log-section" id="log-section" style="display:none">
+      <div class="section-header">
+        <span class="section-title">Prompt log</span>
+        <span class="muted" id="log-total-label"></span>
+      </div>
+      <div class="log-list" id="log-list"></div>
     </div>
-    <div class="history-grid" id="history-grid"></div>
+
+    <div class="history-section" id="history-section" style="display:none">
+      <div class="section-header">
+        <span class="section-title">History</span>
+        <button class="btn-ghost" onclick="clearHistory()">Clear</button>
+      </div>
+      <div class="history-grid" id="history-grid"></div>
+    </div>
   </div>
+
+  <!-- BATCH TAB -->
+  <div id="tab-batch" style="display:none">
+    <div class="batch-upload-area" id="batch-drop-area" onclick="document.getElementById('batch-file-input').click()">
+      <i class="ti ti-file-text"></i>
+      <p>Click or drag & drop a <strong>.txt file</strong></p>
+      <p class="muted">One prompt per line</p>
+      <input type="file" id="batch-file-input" accept=".txt" style="display:none" onchange="loadBatchFile(event)" />
+    </div>
+
+    <div id="batch-preview" style="display:none">
+      <div class="batch-info" id="batch-info"></div>
+      <div class="batch-prompt-list" id="batch-prompt-list"></div>
+    </div>
+
+    <div class="controls-row" style="margin-top:1.25rem">
+      <div class="ratio-wrap">
+        <label>Ratio:</label>
+        <div class="ratio-pills">
+          <button class="ratio-pill active" onclick="setBatchRatio(this,'768x768','1:1')">1:1</button>
+          <button class="ratio-pill" onclick="setBatchRatio(this,'768x1024','3:4')">3:4</button>
+          <button class="ratio-pill" onclick="setBatchRatio(this,'1024x768','4:3')">4:3</button>
+          <button class="ratio-pill" onclick="setBatchRatio(this,'576x1024','9:16')">9:16</button>
+          <button class="ratio-pill" onclick="setBatchRatio(this,'1024x576','16:9')">16:9</button>
+          <button class="ratio-pill" onclick="setBatchRatio(this,'832x1216','2:3')">2:3</button>
+        </div>
+      </div>
+      <div class="batch-wrap">
+        <label>Images per prompt:</label>
+        <div class="num-pills">
+          <button class="num-pill active" onclick="setBatchCount(this,1)">1</button>
+          <button class="num-pill" onclick="setBatchCount(this,2)">2</button>
+          <button class="num-pill" onclick="setBatchCount(this,3)">3</button>
+          <button class="num-pill" onclick="setBatchCount(this,4)">4</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="dl-settings">
+      <div class="dl-field">
+        <label>Filename prefix:</label>
+        <input type="text" id="batch-prefix" placeholder="batch" value="batch" />
+      </div>
+      <div class="dl-field">
+        <label>Delay between prompts (sec):</label>
+        <input type="number" id="batch-delay" value="2" min="1" max="10" style="width:60px" />
+      </div>
+    </div>
+
+    <div class="action-row" style="grid-template-columns:1fr auto auto">
+      <button class="gen-btn" id="batch-gen-btn" onclick="startBatch()" disabled>
+        <i class="ti ti-player-play"></i> Start Batch
+      </button>
+      <button class="btn-outline" id="batch-stop-btn" onclick="stopBatch()" style="display:none">
+        <i class="ti ti-player-stop"></i> Stop
+      </button>
+    </div>
+
+    <div class="batch-progress" id="batch-progress" style="display:none">
+      <div class="progress-bar-wrap">
+        <div class="progress-bar" id="progress-bar"></div>
+      </div>
+      <div class="progress-text" id="progress-text"></div>
+    </div>
+
+    <div id="batch-results"></div>
+  </div>
+
 </main>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="app.js"></script>
