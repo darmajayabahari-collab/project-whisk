@@ -1,16 +1,11 @@
 /* Project Whisk — app.js
-   Backend: Cloudflare Workers AI (free, 10k images/day) */
+   Backend: Cloudflare Workers AI */
 
 const WORKER_URL = 'https://whisk-api.darmajayabahari.workers.dev';
 
 let promptLog = [];
 let historyImgs = [];
 let activePill = 'Default';
-
-window.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('key-screen').style.display = 'none';
-  document.getElementById('app-screen').style.display = 'block';
-});
 
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -35,7 +30,6 @@ function previewUrl(slot) {
   const box = document.getElementById('preview-' + slot);
   if (!url) { box.innerHTML = getEmpty(slot); return; }
   const img = new Image();
-  img.crossOrigin = 'anonymous';
   img.src = url;
   img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
   img.onload  = () => { box.innerHTML = ''; box.appendChild(img); };
@@ -82,16 +76,15 @@ async function generate() {
 
   let done = 0;
   await Promise.all(Array.from({ length: count }, (_, i) =>
-    generateOne(data.final).then(result => {
+    generateOne(data.final).then(src => {
       done++;
       statusBar.textContent = `Generated ${done} / ${count}`;
       const cell = document.getElementById('cell-' + i);
       if (!cell) return;
-      if (result.error) {
-        cell.innerHTML = `<div class="preview-empty" style="height:100%"><i class="ti ti-photo-off"></i><span style="font-size:11px;padding:0 8px;text-align:center">${result.error}</span></div>`;
+      if (!src) {
+        cell.innerHTML = `<div class="preview-empty" style="height:100%"><i class="ti ti-photo-off"></i><span>Failed</span></div>`;
         return;
       }
-      const src = `data:${result.mimeType};base64,${result.image}`;
       cell.className = 'result-card';
       cell.innerHTML = `
         <img src="${src}" alt="Generated image ${i+1}" loading="lazy" />
@@ -114,9 +107,11 @@ async function generateOne(prompt) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt })
     });
-    return await res.json();
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
   } catch (err) {
-    return { error: 'Network error' };
+    return null;
   }
 }
 
