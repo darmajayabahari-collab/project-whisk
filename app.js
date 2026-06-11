@@ -1,4 +1,4 @@
-/* Project Whisk v4 — app.js */
+/* Project Whisk v5 — app.js */
 
 const WORKER_URL = 'https://whisk-api.darmajayabahari.workers.dev';
 
@@ -11,17 +11,18 @@ let batchCount = 1;
 let batchRatio = '768x768';
 let batchPrompts = [];
 let batchStopped = false;
+let generateStopped = false;
 let globalIndex = 0;
 
 function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
   document.querySelector(".tab[onclick=\"switchTab('" + tab + "')\"]").classList.add('active');
   document.getElementById('tab-single').style.display = tab === 'single' ? 'block' : 'none';
   document.getElementById('tab-batch').style.display  = tab === 'batch'  ? 'block' : 'none';
 }
 
 function showToast(msg) {
-  const t = document.getElementById('toast');
+  var t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(t._tid);
@@ -105,36 +106,55 @@ async function generateOne(prompt, ratio) {
       return { error: err.error || 'Failed' };
     }
     var blob = await res.blob();
-    return { url: URL.createObjectURL(blob) };
+    var pngBlob = new Blob([blob], { type: 'image/png' });
+    return { url: URL.createObjectURL(pngBlob) };
   } catch(e) {
     return { error: 'Network error' };
   }
 }
 
 function downloadImg(url, filename) {
+  var cleanName = filename.replace(/[^a-zA-Z0-9_\-\.]/g, '_');
+  if (!cleanName.endsWith('.png') && !cleanName.endsWith('.jpg')) {
+    cleanName += '.png';
+  }
   var a = document.createElement('a');
   a.href = url;
-  a.download = filename;
+  a.download = cleanName;
+  a.type = 'image/png';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
 }
 
+function stopGenerate() {
+  generateStopped = true;
+  var btn     = document.getElementById('gen-btn');
+  var stopBtn = document.getElementById('stop-btn');
+  btn.style.display     = 'flex';
+  stopBtn.style.display = 'none';
+  btn.disabled = false;
+  btn.innerHTML = '<i class="ti ti-wand"></i> Generate';
+  document.getElementById('status-bar').textContent = 'Stopped.';
+}
+
 async function generate() {
   var btn       = document.getElementById('gen-btn');
+  var stopBtn   = document.getElementById('stop-btn');
   var statusBar = document.getElementById('status-bar');
   var data      = buildPromptData();
   var prefix    = document.getElementById('filename-prefix').value.trim() || 'whisk';
   var autodl    = document.getElementById('auto-download').checked;
   var count     = imageCount;
 
-  btn.disabled = true;
-  btn.innerHTML = '<div class="spinner"></div>';
+  generateStopped = false;
+  btn.style.display     = 'none';
+  stopBtn.style.display = 'flex';
   statusBar.textContent = 'Generating ' + count + ' image' + (count > 1 ? 's' : '') + '...';
   addToLog(data);
 
-  var ratioParts = imageRatio.split('x');
-  var w = ratioParts[0]; var h = ratioParts[1];
+  var rp = imageRatio.split('x');
+  var w = rp[0]; var h = rp[1];
   var aspectStyle = 'aspect-ratio:' + w + '/' + h;
   var cols = count <= 2 ? count : count <= 4 ? 2 : 3;
 
@@ -150,8 +170,10 @@ async function generate() {
   var done = 0;
   var promises = [];
   for (var idx = 0; idx < count; idx++) {
+    if (generateStopped) break;
     promises.push((function(i) {
       return generateOne(data.final, imageRatio).then(function(result) {
+        if (generateStopped) return;
         done++;
         statusBar.textContent = 'Generated ' + done + ' / ' + count;
         var cell = document.getElementById('cell-' + i);
@@ -161,19 +183,21 @@ async function generate() {
           return;
         }
         var ts = Date.now();
-        var filename = prefix + '_' + ts + '_' + (i+1) + '.png';
+        var filename = prefix + '_' + String(done).padStart(4,'0') + '_' + ts + '.png';
         cell.className = 'result-card';
-        cell.style = aspectStyle;
-        cell.innerHTML = '<img src="' + result.url + '" alt="Generated image ' + (i+1) + '" loading="lazy" /><div class="result-overlay"><button class="ov-btn" onclick="downloadImg(\'' + result.url + '\',\'' + filename + '\')" title="Download"><i class="ti ti-download"></i></button><button class="ov-btn" onclick="saveHistory(\'' + result.url + '\')" title="Save"><i class="ti ti-bookmark"></i></button></div>';
+        cell.setAttribute('style', aspectStyle);
+        cell.innerHTML = '<img src="' + result.url + '" alt="Generated image" loading="lazy" /><div class="result-overlay"><button class="ov-btn" onclick="downloadImg(\'' + result.url + '\',\'' + prefix + '_' + String(done).padStart(4,'0') + '.png\')" title="Download"><i class="ti ti-download"></i></button><button class="ov-btn" onclick="saveHistory(\'' + result.url + '\')" title="Save"><i class="ti ti-bookmark"></i></button></div>';
         if (autodl) downloadImg(result.url, filename);
       });
     })(idx));
   }
   await Promise.all(promises);
 
+  btn.style.display     = 'flex';
+  stopBtn.style.display = 'none';
   btn.disabled = false;
   btn.innerHTML = '<i class="ti ti-wand"></i> Generate';
-  statusBar.textContent = 'Done — ' + done + ' image' + (done > 1 ? 's' : '') + ' ready.';
+  if (!generateStopped) statusBar.textContent = 'Done — ' + done + ' image' + (done > 1 ? 's' : '') + ' ready.';
 }
 
 function loadBatchFile(event) {
@@ -181,7 +205,7 @@ function loadBatchFile(event) {
   if (!file) return;
   var reader = new FileReader();
   reader.onload = function(e) {
-    var lines = e.target.result.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l && !l.startsWith('#'); });
+    var lines = e.target.result.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l && l.charAt(0) !== '#'; });
     batchPrompts = lines;
     renderBatchPreview();
     document.getElementById('batch-gen-btn').disabled = false;
@@ -276,9 +300,7 @@ async function startBatch() {
   showToast(batchStopped ? 'Batch stopped' : 'Batch complete!');
 }
 
-function stopBatch() {
-  batchStopped = true;
-}
+function stopBatch() { batchStopped = true; }
 
 function saveHistory(src) {
   if (historyImgs.indexOf(src) !== -1) { showToast('Already saved'); return; }

@@ -109,9 +109,12 @@
       </div>
     </div>
 
-    <div class="action-row">
+    <div class="action-row" style="grid-template-columns:1fr auto 220px">
       <button class="gen-btn" id="gen-btn" onclick="generate()">
         <i class="ti ti-wand"></i> Generate
+      </button>
+      <button class="btn-outline" id="stop-btn" onclick="stopGenerate()" style="display:none;align-self:stretch">
+        <i class="ti ti-player-stop"></i> Stop
       </button>
       <div class="export-panel">
         <div class="ep-header"><i class="ti ti-file-text"></i> Prompt log</div>
