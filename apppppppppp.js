@@ -1,12 +1,13 @@
 /* Project Whisk — app.js
-   Backend: Puter.js (free, no API key, no signup, GPT Image) */
+   Backend: Cloudflare Workers AI (free, 10k images/day) */
+
+const WORKER_URL = 'https://whisk-api.darmajayabahari.workers.dev';
 
 let promptLog = [];
 let historyImgs = [];
 let activePill = 'Default';
 
 window.addEventListener('DOMContentLoaded', () => {
-  // Skip key screen, go straight to app
   document.getElementById('key-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'block';
 });
@@ -81,12 +82,16 @@ async function generate() {
 
   let done = 0;
   await Promise.all(Array.from({ length: count }, (_, i) =>
-    puter.ai.txt2img(data.final, { model: 'google/imagen-4.0-fast' }).then(imgEl => {
+    generateOne(data.final).then(result => {
       done++;
       statusBar.textContent = `Generated ${done} / ${count}`;
       const cell = document.getElementById('cell-' + i);
       if (!cell) return;
-      const src = imgEl.src;
+      if (result.error) {
+        cell.innerHTML = `<div class="preview-empty" style="height:100%"><i class="ti ti-photo-off"></i><span style="font-size:11px;padding:0 8px;text-align:center">${result.error}</span></div>`;
+        return;
+      }
+      const src = `data:${result.mimeType};base64,${result.image}`;
       cell.className = 'result-card';
       cell.innerHTML = `
         <img src="${src}" alt="Generated image ${i+1}" loading="lazy" />
@@ -94,16 +99,25 @@ async function generate() {
           <button class="ov-btn" onclick="dlImg('${src}',${i})" title="Download"><i class="ti ti-download"></i></button>
           <button class="ov-btn" onclick="saveHistory('${src}')" title="Save"><i class="ti ti-bookmark"></i></button>
         </div>`;
-    }).catch(err => {
-      done++;
-      const cell = document.getElementById('cell-' + i);
-      if (cell) cell.innerHTML = `<div class="preview-empty" style="height:100%"><i class="ti ti-photo-off"></i><span style="font-size:11px;padding:0 8px;text-align:center">${err.message || 'Failed'}</span></div>`;
     })
   ));
 
   btn.disabled = false;
   btn.innerHTML = '<i class="ti ti-wand"></i> Generate';
   statusBar.textContent = `Done — ${done} image${done > 1 ? 's' : ''} ready.`;
+}
+
+async function generateOne(prompt) {
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt })
+    });
+    return await res.json();
+  } catch (err) {
+    return { error: 'Network error' };
+  }
 }
 
 function dlImg(src, idx) {
@@ -163,10 +177,10 @@ function exportTxt() {
   if (!promptLog.length) return;
   const lines = promptLog.map(e => {
     const meta = [];
-    if (e.subject) meta.push('# subject: '   + e.subject);
-    if (e.scene)   meta.push('# scene: '     + e.scene);
+    if (e.subject) meta.push('# subject: ' + e.subject);
+    if (e.scene)   meta.push('# scene: ' + e.scene);
     if (e.style)   meta.push('# style ref: ' + e.style);
-    if (e.extra)   meta.push('# extra: '     + e.extra);
+    if (e.extra)   meta.push('# extra: ' + e.extra);
     meta.push('# style pill: ' + e.styleTag);
     meta.push(e.final);
     return meta.join('\n');
