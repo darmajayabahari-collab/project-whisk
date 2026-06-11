@@ -1,6 +1,22 @@
 /* Project Whisk v5 — app.js */
 
-const WORKER_URL = 'https://whisk-api.darmajayabahari.workers.dev';
+function getWorkerUrl() {
+  return localStorage.getItem('whisk_worker_url') || 'https://whisk-api.darmajayabahari.workers.dev';
+}
+
+function saveWorkerUrl() {
+  var url = document.getElementById('worker-url-input').value.trim();
+  if (!url) { showToast('Enter a Worker URL'); return; }
+  localStorage.setItem('whisk_worker_url', url);
+  showToast('Worker URL saved!');
+}
+
+function loadWorkerUrlInput() {
+  var saved = localStorage.getItem('whisk_worker_url');
+  if (saved) document.getElementById('worker-url-input').value = saved;
+}
+
+window.addEventListener('DOMContentLoaded', loadWorkerUrlInput);
 
 let promptLog = [];
 let historyImgs = [];
@@ -96,7 +112,7 @@ async function generateOne(prompt, ratio) {
   var w = parseInt(parts[0]);
   var h = parseInt(parts[1]);
   try {
-    var res = await fetch(WORKER_URL, {
+    var res = await fetch(getWorkerUrl(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt: prompt, width: w, height: h })
@@ -114,14 +130,10 @@ async function generateOne(prompt, ratio) {
 }
 
 function downloadImg(url, filename) {
-  var cleanName = filename.replace(/[^a-zA-Z0-9_\-\.]/g, '_');
-  if (!cleanName.endsWith('.png') && !cleanName.endsWith('.jpg')) {
-    cleanName += '.png';
-  }
+  var cleanName = filename.replace(/[^a-zA-Z0-9_\-]/g, '_') + '.png';
   var a = document.createElement('a');
   a.href = url;
   a.download = cleanName;
-  a.type = 'image/png';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -129,12 +141,10 @@ function downloadImg(url, filename) {
 
 function stopGenerate() {
   generateStopped = true;
-  var btn     = document.getElementById('gen-btn');
-  var stopBtn = document.getElementById('stop-btn');
-  btn.style.display     = 'flex';
-  stopBtn.style.display = 'none';
-  btn.disabled = false;
-  btn.innerHTML = '<i class="ti ti-wand"></i> Generate';
+  document.getElementById('gen-btn').style.display = 'flex';
+  document.getElementById('stop-btn').style.display = 'none';
+  document.getElementById('gen-btn').disabled = false;
+  document.getElementById('gen-btn').innerHTML = '<i class="ti ti-wand"></i> Generate';
   document.getElementById('status-bar').textContent = 'Stopped.';
 }
 
@@ -154,8 +164,7 @@ async function generate() {
   addToLog(data);
 
   var rp = imageRatio.split('x');
-  var w = rp[0]; var h = rp[1];
-  var aspectStyle = 'aspect-ratio:' + w + '/' + h;
+  var aspectStyle = 'aspect-ratio:' + rp[0] + '/' + rp[1];
   var cols = count <= 2 ? count : count <= 4 ? 2 : 3;
 
   var container = document.getElementById('results-container');
@@ -182,11 +191,10 @@ async function generate() {
           cell.innerHTML = '<div class="preview-empty" style="height:100%"><i class="ti ti-photo-off"></i><span style="font-size:11px;padding:0 8px;text-align:center">' + result.error + '</span></div>';
           return;
         }
-        var ts = Date.now();
-        var filename = prefix + '_' + String(done).padStart(4,'0') + '_' + ts + '.png';
+        var filename = prefix + '_' + String(done).padStart(4,'0');
         cell.className = 'result-card';
         cell.setAttribute('style', aspectStyle);
-        cell.innerHTML = '<img src="' + result.url + '" alt="Generated image" loading="lazy" /><div class="result-overlay"><button class="ov-btn" onclick="downloadImg(\'' + result.url + '\',\'' + prefix + '_' + String(done).padStart(4,'0') + '.png\')" title="Download"><i class="ti ti-download"></i></button><button class="ov-btn" onclick="saveHistory(\'' + result.url + '\')" title="Save"><i class="ti ti-bookmark"></i></button></div>';
+        cell.innerHTML = '<img src="' + result.url + '" alt="Generated image" loading="lazy" /><div class="result-overlay"><button class="ov-btn" onclick="downloadImg(\'' + result.url + '\',\'' + filename + '\')" title="Download"><i class="ti ti-download"></i></button><button class="ov-btn" onclick="saveHistory(\'' + result.url + '\')" title="Save"><i class="ti ti-bookmark"></i></button></div>';
         if (autodl) downloadImg(result.url, filename);
       });
     })(idx));
@@ -254,7 +262,6 @@ async function startBatch() {
 
   for (var i = 0; i < batchPrompts.length; i++) {
     if (batchStopped) break;
-
     var prompt = batchPrompts[i];
     var pct = Math.round((i / batchPrompts.length) * 100);
     bar.style.width = pct + '%';
@@ -271,7 +278,7 @@ async function startBatch() {
       if (batchStopped) break;
       var result = await generateOne(prompt, batchRatio);
       if (result.url) {
-        var filename = prefix + '_' + String(i+1).padStart(4,'0') + '_' + (j+1) + '.png';
+        var filename = prefix + '_' + String(i+1).padStart(4,'0') + '_' + (j+1);
         downloadImg(result.url, filename);
         globalIndex++;
       }
