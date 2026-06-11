@@ -1,11 +1,17 @@
+<<<<<<< HEAD
 /* Project Whisk — app.js v4
    Features: ratio, images per prompt, auto-download, batch */
+=======
+/* Project Whisk — app.js
+   Backend: Cloudflare Workers AI */
+>>>>>>> 4c98f71b64da90bc93ece8fbac978ac6fff1c16d
 
 const WORKER_URL = 'https://whisk-api.darmajayabahari.workers.dev';
 
 let promptLog = [];
 let historyImgs = [];
 let activePill = 'Default';
+<<<<<<< HEAD
 let imageCount = 1;
 let imageRatio = '768x768';
 let batchCount = 1;
@@ -24,6 +30,9 @@ function switchTab(tab) {
 }
 
 /* ── HELPERS ── */
+=======
+
+>>>>>>> 4c98f71b64da90bc93ece8fbac978ac6fff1c16d
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -38,6 +47,7 @@ function togglePill(el) {
   activePill = el.textContent.trim();
 }
 
+<<<<<<< HEAD
 function setCount(el, n) {
   document.querySelectorAll('#num-pills .num-pill').forEach(p => p.classList.remove('active'));
   el.classList.add('active');
@@ -63,6 +73,8 @@ function setBatchRatio(el, res, label) {
 }
 
 /* ── PREVIEW ── */
+=======
+>>>>>>> 4c98f71b64da90bc93ece8fbac978ac6fff1c16d
 const emptyIcons = { subject: 'ti-user-circle', scene: 'ti-mountain', style: 'ti-brush' };
 function getEmpty(slot) {
   return `<div class="preview-empty"><i class="ti ${emptyIcons[slot]}"></i><span>${slot.charAt(0).toUpperCase()+slot.slice(1)}</span></div>`;
@@ -78,7 +90,10 @@ function previewUrl(slot) {
   img.onerror = () => { box.innerHTML = getEmpty(slot); };
 }
 
+<<<<<<< HEAD
 /* ── PROMPT BUILDER ── */
+=======
+>>>>>>> 4c98f71b64da90bc93ece8fbac978ac6fff1c16d
 function buildPromptData() {
   const subject = document.getElementById('url-subject').value.trim();
   const scene   = document.getElementById('url-scene').value.trim();
@@ -96,6 +111,7 @@ function buildPromptData() {
   return { subject, scene, style: styleV, extra, styleTag: activePill, final: final.trim() };
 }
 
+<<<<<<< HEAD
 /* ── GENERATE ONE IMAGE ── */
 async function generateOne(prompt, ratio) {
   const [w, h] = ratio.split('x').map(Number);
@@ -134,32 +150,52 @@ async function generate() {
   const prefix    = document.getElementById('filename-prefix').value.trim() || 'whisk';
   const autodl    = document.getElementById('auto-download').checked;
   const count     = imageCount;
+=======
+async function generate() {
+  const btn       = document.getElementById('gen-btn');
+  const statusBar = document.getElementById('status-bar');
+  const count     = parseInt(document.getElementById('batch-slider').value);
+  const data      = buildPromptData();
+>>>>>>> 4c98f71b64da90bc93ece8fbac978ac6fff1c16d
 
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner"></div>';
   statusBar.textContent = `Generating ${count} image${count > 1 ? 's' : ''}...`;
   addToLog(data);
 
+<<<<<<< HEAD
   const [w, h] = imageRatio.split('x').map(Number);
   const aspectStyle = `aspect-ratio:${w}/${h}`;
   const cols = count <= 2 ? count : count <= 4 ? 2 : 3;
 
+=======
+  const cols = count <= 2 ? count : count <= 4 ? 2 : count <= 6 ? 3 : 4;
+>>>>>>> 4c98f71b64da90bc93ece8fbac978ac6fff1c16d
   const container = document.getElementById('results-container');
   container.className = 'results-grid';
   container.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
   container.innerHTML = Array.from({ length: count }, (_, i) => `
+<<<<<<< HEAD
     <div class="loading-cell" id="cell-${i}" style="${aspectStyle}">
+=======
+    <div class="loading-cell" id="cell-${i}">
+>>>>>>> 4c98f71b64da90bc93ece8fbac978ac6fff1c16d
       <div class="spinner"></div>
       <span class="load-text">Generating...</span>
     </div>`).join('');
 
   let done = 0;
   await Promise.all(Array.from({ length: count }, (_, i) =>
+<<<<<<< HEAD
     generateOne(data.final, imageRatio).then(result => {
+=======
+    generateOne(data.final).then(src => {
+>>>>>>> 4c98f71b64da90bc93ece8fbac978ac6fff1c16d
       done++;
       statusBar.textContent = `Generated ${done} / ${count}`;
       const cell = document.getElementById('cell-' + i);
       if (!cell) return;
+<<<<<<< HEAD
       if (result.error) {
         cell.innerHTML = `<div class="preview-empty" style="height:100%"><i class="ti ti-photo-off"></i><span style="font-size:11px;padding:0 8px;text-align:center">${result.error}</span></div>`;
         return;
@@ -175,6 +211,19 @@ async function generate() {
           <button class="ov-btn" onclick="saveHistory('${result.url}')" title="Save"><i class="ti ti-bookmark"></i></button>
         </div>`;
       if (autodl) downloadImg(result.url, filename);
+=======
+      if (!src) {
+        cell.innerHTML = `<div class="preview-empty" style="height:100%"><i class="ti ti-photo-off"></i><span>Failed</span></div>`;
+        return;
+      }
+      cell.className = 'result-card';
+      cell.innerHTML = `
+        <img src="${src}" alt="Generated image ${i+1}" loading="lazy" />
+        <div class="result-overlay">
+          <button class="ov-btn" onclick="dlImg('${src}',${i})" title="Download"><i class="ti ti-download"></i></button>
+          <button class="ov-btn" onclick="saveHistory('${src}')" title="Save"><i class="ti ti-bookmark"></i></button>
+        </div>`;
+>>>>>>> 4c98f71b64da90bc93ece8fbac978ac6fff1c16d
     })
   ));
 
@@ -183,6 +232,7 @@ async function generate() {
   statusBar.textContent = `Done — ${done} image${done > 1 ? 's' : ''} ready.`;
 }
 
+<<<<<<< HEAD
 /* ── BATCH ── */
 function loadBatchFile(event) {
   const file = event.target.files[0];
@@ -297,6 +347,29 @@ function stopBatch() {
 }
 
 /* ── HISTORY ── */
+=======
+async function generateOne(prompt) {
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt })
+    });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
+  } catch (err) {
+    return null;
+  }
+}
+
+function dlImg(src, idx) {
+  const a = document.createElement('a');
+  a.href = src; a.download = 'whisk-' + Date.now() + '-' + idx + '.png';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+>>>>>>> 4c98f71b64da90bc93ece8fbac978ac6fff1c16d
 function saveHistory(src) {
   if (historyImgs.includes(src)) { showToast('Already saved'); return; }
   historyImgs.unshift(src);
@@ -313,7 +386,10 @@ function renderHistory() {
 }
 function clearHistory() { historyImgs = []; renderHistory(); }
 
+<<<<<<< HEAD
 /* ── PROMPT LOG ── */
+=======
+>>>>>>> 4c98f71b64da90bc93ece8fbac978ac6fff1c16d
 function addToLog(entry) {
   promptLog.push(entry);
   document.getElementById('log-count').textContent = promptLog.length;
@@ -345,7 +421,10 @@ function clearLog() {
   showToast('Log cleared');
 }
 
+<<<<<<< HEAD
 /* ── EXPORT TXT ── */
+=======
+>>>>>>> 4c98f71b64da90bc93ece8fbac978ac6fff1c16d
 function exportTxt() {
   if (!promptLog.length) return;
   const lines = promptLog.map(e => {
