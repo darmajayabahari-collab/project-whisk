@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAS PROJECT — Remix Gambar dengan AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Sora:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FFFFFF; --ink:#1B1F3B; --ink-soft:#5A5F7D;
+  --amber:#F5B73C; --coral:#FF6B5E; --teal:#2EC4B6;
+  --line:#1B1F3B; --card:#FFFFFF; --wash:#F2F3F7;
+  --shadow:4px 4px 0 var(--ink); --shadow-sm:3px 3px 0 var(--ink);
+  --radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Sora',sans-serif;background:var(--wash);color:var(--ink);min-height:100vh;font-size:15px}
+header{
+  background:var(--paper);border-bottom:2px solid var(--line);padding:16px 24px;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  position:sticky;top:0;z-index:50;
+}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mark{
+  width:42px;height:42px;border:2px solid var(--ink);border-radius:12px;background:var(--amber);
+  display:grid;place-items:center;box-shadow:var(--shadow-sm);
+  font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:18px;
+}
+.brand h1{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:22px;letter-spacing:-.5px}
+.brand h1 span{color:var(--coral)}
+.brand p{font-size:11px;color:var(--ink-soft)}
+.header-actions{display:flex;gap:10px;align-items:center}
+.btn{
+  font-family:'Sora',sans-serif;font-weight:600;font-size:13px;border:2px solid var(--ink);
+  border-radius:10px;background:var(--paper);color:var(--ink);padding:9px 16px;cursor:pointer;
+  box-shadow:var(--shadow-sm);transition:transform .08s,box-shadow .08s;
+}
+.btn:hover{transform:translate(-1px,-1px);box-shadow:5px 5px 0 var(--ink)}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.btn:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+.btn.primary{background:var(--coral);color:#fff}
+.btn.amber{background:var(--amber)}
+.btn.teal{background:var(--teal);color:#fff}
+.btn.small{padding:6px 10px;font-size:12px;box-shadow:2px 2px 0 var(--ink)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+main{max-width:1180px;margin:0 auto;padding:28px 20px 80px}
+.intro{margin-bottom:22px}
+.intro h2{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:28px;letter-spacing:-.5px}
+.intro p{color:var(--ink-soft);max-width:680px;margin-top:4px;font-size:14px}
+.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;position:relative;z-index:2}
+.slot{
+  background:var(--card);border:2px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;
+}
+.slot-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:2px solid var(--line)}
+.slot-head .tag{
+  font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:13px;letter-spacing:1px;
+  text-transform:uppercase;padding:3px 10px;border:2px solid var(--ink);border-radius:8px;
+}
+.slot[data-role="subject"] .tag{background:var(--amber)}
+.slot[data-role="scene"] .tag{background:var(--teal);color:#fff}
+.slot[data-role="style"] .tag{background:var(--coral);color:#fff}
+.slot-head small{font-size:11px;color:var(--ink-soft)}
+.drop{
+  position:relative;min-height:150px;display:grid;place-items:center;cursor:pointer;
+  background:var(--wash);border-bottom:2px dashed var(--line);text-align:center;padding:14px;
+}
+.drop.dragover{background:#E8F8F6;border-color:var(--teal)}
+.drop .hint{font-size:12px;color:var(--ink-soft);line-height:1.5}
+.drop .hint b{color:var(--ink)}
+.drop img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.drop .clear-img{
+  position:absolute;top:8px;right:8px;z-index:3;display:none;width:28px;height:28px;
+  border-radius:8px;border:2px solid var(--ink);background:#fff;cursor:pointer;font-weight:700;
+  line-height:1;box-shadow:2px 2px 0 var(--ink);
+}
+.drop.has-img .clear-img{display:block}
+.drop.has-img .hint{display:none}
+.slot-body{padding:12px 14px;display:flex;flex-direction:column;gap:8px;flex:1}
+.slot-body textarea{
+  font-family:'Sora',sans-serif;font-size:12.5px;color:var(--ink);border:2px solid var(--line);
+  border-radius:10px;padding:8px 10px;resize:vertical;min-height:64px;background:#fff;
+}
+.slot-body textarea:focus{outline:3px solid var(--amber);outline-offset:1px}
+.slot-status{font-size:11px;color:var(--ink-soft);min-height:14px}
+.slot-status.busy{color:var(--coral);font-weight:600}
+.slot-status.ok{color:#1E9E63;font-weight:600}
+.slot-status.err{color:#C23B2E;font-weight:600}
+.conveyor{height:46px;position:relative;margin:0 12%}
+.conveyor svg{position:absolute;inset:0;width:100%;height:100%}
+.mixer{
+  background:var(--ink);color:#fff;border:2px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:18px;position:relative;z-index:2;
+}
+.mixer-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.mixer-head h3{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:18px}
+.mixer-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.mixer textarea{
+  width:100%;font-family:'Space Mono',monospace;font-size:12.5px;background:#262B4F;color:#FDF6E3;
+  border:2px solid #3A4070;border-radius:10px;padding:12px;min-height:96px;resize:vertical;line-height:1.55;
+}
+.mixer textarea:focus{outline:3px solid var(--amber)}
+.mixer-row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;align-items:center}
+.mixer input[type=text]{
+  flex:1;min-width:220px;font-family:'Sora',sans-serif;font-size:13px;background:#262B4F;color:#fff;
+  border:2px solid #3A4070;border-radius:10px;padding:10px 12px;
+}
+.mixer input[type=text]::placeholder{color:#8B90B5}
+.select-wrap{display:flex;align-items:center;gap:6px;font-size:12px;color:#C8CCE8}
+select{
+  font-family:'Sora',sans-serif;font-size:12.5px;font-weight:600;border:2px solid var(--ink);
+  border-radius:8px;padding:7px 8px;background:#fff;color:var(--ink);cursor:pointer;
+}
+.toggle{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#C8CCE8;cursor:pointer;user-select:none}
+.toggle input{accent-color:var(--amber);width:16px;height:16px;cursor:pointer}
+.gen-bar{display:flex;gap:10px;margin-top:14px;align-items:center;flex-wrap:wrap}
+.btn.generate{
+  font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:16px;background:var(--amber);
+  padding:12px 28px;border-radius:12px;letter-spacing:.3px;
+}
+.gen-status{font-size:12.5px;color:#C8CCE8;min-height:16px}
+.gen-status.err{color:#FF9B92;font-weight:600}
+.queue-pill{
+  display:none;font-size:11.5px;font-weight:600;background:#262B4F;border:2px solid #3A4070;
+  border-radius:999px;padding:5px 12px;color:#FDF6E3;
+}
+.queue-pill.on{display:inline-block}
+.gallery{margin-top:34px}
+.gallery h3{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:20px;margin-bottom:14px}
+.feed{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}
+.card{
+  background:var(--card);border:2px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;
+}
+.card .img-wrap{position:relative;background:var(--wash);min-height:200px;display:grid;place-items:center}
+.card img{width:100%;display:block}
+.card .wait{font-size:12px;color:var(--ink-soft);text-align:center;padding:14px;line-height:1.6}
+.card .spin{
+  width:34px;height:34px;border:4px solid var(--ink);border-top-color:var(--amber);
+  border-radius:50%;animation:rot .8s linear infinite;margin:0 auto 8px;
+}
+@keyframes rot{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.card .spin{animation-duration:2s}}
+.card-meta{padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.card-meta .prompt-snip{
+  font-family:'Space Mono',monospace;font-size:10.5px;color:var(--ink-soft);
+  max-height:48px;overflow:hidden;line-height:1.5;
+}
+.card-actions{display:flex;gap:6px;flex-wrap:wrap}
+.card .seed{font-size:10px;color:var(--ink-soft)}
+.card .fail{padding:16px;font-size:12px;color:#C23B2E;line-height:1.6;text-align:center}
+.empty-feed{
+  border:2px dashed var(--ink);border-radius:var(--radius);padding:36px;text-align:center;
+  color:var(--ink-soft);font-size:13.5px;background:#FBFBFD;
+}
+dialog{border:2px solid var(--ink);border-radius:var(--radius);box-shadow:var(--shadow);padding:0;max-width:500px;width:92%}
+dialog::backdrop{background:rgba(27,31,59,.55)}
+.modal-head{padding:14px 18px;border-bottom:2px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.modal-head h3{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:17px}
+.modal-body{padding:18px;display:flex;flex-direction:column;gap:14px;font-size:13px}
+.modal-body label{font-weight:600;font-size:12.5px;display:block;margin-bottom:4px}
+.modal-body input{
+  width:100%;border:2px solid var(--line);border-radius:10px;padding:9px 11px;
+  font-family:'Space Mono',monospace;font-size:12px;
+}
+.modal-body p{color:var(--ink-soft);font-size:12px;line-height:1.6;margin-top:4px}
+.modal-body a{color:var(--coral);font-weight:600}
+.modal-foot{padding:14px 18px;border-top:2px solid var(--line);display:flex;justify-content:flex-end;gap:8px}
+footer{text-align:center;color:var(--ink-soft);font-size:11.5px;padding:24px}
+@media (max-width:820px){.slots{grid-template-columns:1fr}.conveyor{display:none}.brand p{display:none}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-mark">R</div>
+    <div>
+      <h1>RAS <span>PROJECT</span></h1>
+      <p>Remix gambar ala Whisk — Subjek + Scene + Gaya → gambar baru. 100% gratis.</p>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn small" id="btnSettings">⚙ Pengaturan</button>
+  </div>
+</header>
+
+<main>
+  <section class="intro">
+    <h2>Campur tiga bahan, panggang satu gambar.</h2>
+    <p>Seret gambar (atau tulis teks) ke tiap slot. AI menangkap <b>esensi</b> tiap gambar, meraciknya jadi satu prompt yang bisa kamu edit, lalu FLUX menghasilkan gambar baru — alur kerja yang sama dengan Google Whisk, tanpa akun Google, tanpa biaya. Mode anonim dibatasi 1 gambar / 15 detik oleh server; aplikasi ini mengantre otomatis untukmu.</p>
+  </section>
+
+  <div class="rail">
+    <section class="slots" id="slots"></section>
+
+    <div class="conveyor" aria-hidden="true">
+      <svg viewBox="0 0 600 46" preserveAspectRatio="none">
+        <path d="M60 0 V14 Q60 26 80 26 H280 Q300 26 300 38 V46" fill="none" stroke="#1B1F3B" stroke-width="3"/>
+        <path d="M300 0 V46" fill="none" stroke="#1B1F3B" stroke-width="3"/>
+        <path d="M540 0 V14 Q540 26 520 26 H320 Q300 26 300 38 V46" fill="none" stroke="#1B1F3B" stroke-width="3"/>
+        <circle cx="60" cy="6" r="5" fill="#F5B73C" stroke="#1B1F3B" stroke-width="2.5"/>
+        <circle cx="300" cy="6" r="5" fill="#2EC4B6" stroke="#1B1F3B" stroke-width="2.5"/>
+        <circle cx="540" cy="6" r="5" fill="#FF6B5E" stroke="#1B1F3B" stroke-width="2.5"/>
+      </svg>
+    </div>
+
+    <section class="mixer">
+      <div class="mixer-head">
+        <h3>🥣 Mixer Prompt</h3>
+        <div class="mixer-controls">
+          <label class="toggle"><input type="checkbox" id="flatVector"> Mode Flat Vector (Adobe Stock)</label>
+          <button class="btn small amber" id="btnCompose">Racik ulang prompt</button>
+        </div>
+      </div>
+      <textarea id="finalPrompt" placeholder="Prompt hasil racikan muncul di sini. Bebas diedit sebelum generate — sama seperti Whisk."></textarea>
+      <div class="mixer-row">
+        <input type="text" id="extraDetail" placeholder="Detail tambahan (opsional): mis. 'memegang stetoskop', 'warna pastel', 'tersenyum'…">
+        <span class="select-wrap">Rasio
+          <select id="aspect">
+            <option value="1024x1024" selected>1:1</option>
+            <option value="1280x720">16:9</option>
+            <option value="720x1280">9:16</option>
+            <option value="1024x768">4:3</option>
+            <option value="768x1024">3:4</option>
+          </select>
+        </span>
+        <span class="select-wrap">Jumlah
+          <select id="batch">
+            <option value="2" selected>2 gambar</option>
+            <option value="1">1 gambar</option>
+            <option value="4">4 gambar</option>
+          </select>
+        </span>
+      </div>
+      <div class="gen-bar">
+        <button class="btn generate" id="btnGenerate">🎨 GENERATE</button>
+        <button class="btn small" id="btnDice" title="Generate ulang dengan seed acak">🎲 Acak</button>
+        <span class="queue-pill" id="queuePill"></span>
+        <span class="gen-status" id="genStatus"></span>
+      </div>
+    </section>
+  </div>
+
+  <section class="gallery">
+    <h3>Hasil</h3>
+    <div class="feed" id="feed">
+      <div class="empty-feed" id="emptyFeed">Belum ada hasil. Isi minimal satu slot, lalu tekan <b>GENERATE</b>.</div>
+    </div>
+  </section>
+</main>
+
+<footer>RAS PROJECT · Analisis gambar &amp; generasi via Pollinations.AI (open-source, gratis) · Dibuat untuk pipeline RAS Studio</footer>
+
+<dialog id="settingsModal">
+  <div class="modal-head">
+    <h3>Pengaturan</h3>
+    <button class="btn small" id="btnCloseSettings">✕</button>
+  </div>
+  <div class="modal-body">
+    <div>
+      <label for="apiKey">Pollinations API Key (opsional)</label>
+      <input type="text" id="apiKey" placeholder="pk_xxxx">
+      <p>Tanpa key aplikasi tetap jalan (mode anonim: 1 request / 15 detik). Dengan key dari <a href="https://enter.pollinations.ai" target="_blank" rel="noopener">enter.pollinations.ai</a> (login GitHub, tanpa Google) antrean jauh lebih cepat. Key disimpan hanya di browser-mu (localStorage).</p>
+    </div>
+    <div>
+      <label for="imgModel">Model gambar</label>
+      <input type="text" id="imgModel" placeholder="flux (default)">
+      <p>Default <b>flux</b> (Flux Schnell, gratis). Model lain: <b>zimage</b>, <b>klein</b>, <b>gptimage</b> — sebagian butuh key/pollen.</p>
+    </div>
+    <div>
+      <label for="genDelay">Jeda antar gambar (detik)</label>
+      <input type="text" id="genDelay" placeholder="otomatis (15 tanpa key, 4 dengan key)">
+      <p>Kosongkan untuk otomatis. Kalau sering kena limit (429), naikkan jedanya.</p>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn primary" id="btnSaveSettings">Simpan</button>
+  </div>
+</dialog>
+
+<script>
+/* =====================================================================
+   RAS PROJECT v2 — klon arsitektur Google Whisk, full gratis
+   ---------------------------------------------------------------------
+   TAHAP 1 (mata)  : vision model menulis caption "esensi" tiap gambar
+                     input — peran Gemini di Whisk.
+                     POST gen.pollinations.ai/v1/chat/completions
+                     (fallback: text.pollinations.ai/openai)
+   TAHAP 2 (tangan): caption diracik jadi 1 prompt → FLUX Schnell.
+                     GET gen.pollinations.ai/image/{prompt}
+                     (fallback: image.pollinations.ai/prompt/{prompt})
+   ---------------------------------------------------------------------
+   Fakta server (riset Juni 2026):
+   - Tier anonim: ±1 request / 15 detik → SEMUA generate lewat antrean
+     berurutan, bukan paralel.
+   - 429 = rate limit → retry dengan backoff (hormati Retry-After).
+   - 422 = content_policy_violation → jangan retry, beri tahu user.
+   - Web app dianjurkan menyertakan parameter `referrer`.
+   ===================================================================== */
+
+const REFERRER = 'ras-project';
+const LS = { key:'rasproject_key', model:'rasproject_model', delay:'rasproject_delay' };
+
+const SLOT_DEFS = [
+  { role:'subject', label:'SUBJEK', sub:'siapa / apa',
+    hint:'Seret gambar ke sini<br>atau <b>klik untuk pilih file</b>',
+    visionPrompt:'You are an image captioning engine. Describe ONLY the main subject of this image in one detailed sentence: what it is, key physical traits, clothing/accessories, pose, expression. Ignore the background and art style completely. Reply with the description only, no preamble.' },
+  { role:'scene', label:'SCENE', sub:'di mana',
+    hint:'Seret gambar latar/lokasi<br>atau <b>klik untuk pilih file</b>',
+    visionPrompt:'You are an image captioning engine. Describe ONLY the environment/setting/background of this image in one detailed sentence: location, objects in the environment, lighting, atmosphere. Ignore any main subject and the art style. Reply with the description only, no preamble.' },
+  { role:'style', label:'GAYA', sub:'seperti apa',
+    hint:'Seret gambar referensi gaya<br>atau <b>klik untuk pilih file</b>',
+    visionPrompt:'You are an image captioning engine. Describe ONLY the visual art style of this image in one detailed sentence: medium, technique, color palette, line quality, shading, overall aesthetic (e.g. flat vector, watercolor, 3D render, anime). Ignore the actual subject matter. Reply with the description only, no preamble.' }
+];
+
+const state = {
+  slots:{ subject:{caption:''}, scene:{caption:''}, style:{caption:''} },
+  composedByUser:false
+};
+
+const $ = id => document.getElementById(id);
+const apiKey   = () => localStorage.getItem(LS.key)   || '';
+const imgModel = () => localStorage.getItem(LS.model) || 'flux';
+function genDelayMs(){
+  const c = parseFloat(localStorage.getItem(LS.delay));
+  if(!isNaN(c) && c >= 0) return c*1000;
+  return apiKey() ? 4000 : 15500;   // anonim: server membatasi ±1 req/15s
+}
+
+/* ============================ UI SLOT ============================ */
+const slotsEl = $('slots');
+SLOT_DEFS.forEach(def=>{
+  const el = document.createElement('div');
+  el.className='slot'; el.dataset.role=def.role;
+  el.innerHTML = `
+    <div class="slot-head"><span class="tag">${def.label}</span><small>${def.sub}</small></div>
+    <div class="drop" tabindex="0" role="button" aria-label="Unggah gambar ${def.label}">
+      <span class="hint">${def.hint}</span>
+      <img alt="" hidden>
+      <button class="clear-img" title="Hapus gambar" aria-label="Hapus gambar">✕</button>
+      <input type="file" accept="image/*" hidden>
+    </div>
+    <div class="slot-body">
+      <textarea placeholder="…atau tulis deskripsi ${def.label.toLowerCase()} secara manual"></textarea>
+      <span class="slot-status"></span>
+    </div>`;
+  slotsEl.appendChild(el);
+  wireSlot(el, def);
+});
+
+function wireSlot(el, def){
+  const drop=el.querySelector('.drop'), file=el.querySelector('input[type=file]'),
+        img=el.querySelector('img'), ta=el.querySelector('textarea'),
+        st=el.querySelector('.slot-status'), clr=el.querySelector('.clear-img');
+  const setStatus=(msg,cls='')=>{ st.textContent=msg; st.className='slot-status '+cls; };
+
+  drop.addEventListener('click', e=>{ if(e.target!==clr) file.click(); });
+  drop.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();file.click();} });
+  ;['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('dragover');}));
+  ;['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('dragover');}));
+  drop.addEventListener('drop', e=>{ const f=e.dataTransfer.files[0]; if(f) handleFile(f); });
+  file.addEventListener('change', ()=>{ if(file.files[0]) handleFile(file.files[0]); });
+  clr.addEventListener('click', e=>{
+    e.stopPropagation(); img.hidden=true; img.src=''; drop.classList.remove('has-img'); setStatus('');
+  });
+  ta.addEventListener('input', ()=>{ state.slots[def.role].caption=ta.value.trim(); autoCompose(); });
+
+  async function handleFile(f){
+    if(!f.type.startsWith('image/')){ setStatus('File harus gambar.','err'); return; }
+    const dataUrl = await resizeImage(f, 640);
+    img.src=dataUrl; img.hidden=false; drop.classList.add('has-img');
+    setStatus('🔎 Menganalisis esensi gambar…','busy');
+    try{
+      const caption = await captionImage(dataUrl, def.visionPrompt);
+      state.slots[def.role].caption=caption; ta.value=caption;
+      setStatus('✓ Esensi tertangkap','ok'); autoCompose();
+    }catch(err){
+      console.error('Vision gagal:', err);
+      setStatus('Analisis gagal ('+(err.message||'jaringan')+') — tulis deskripsi manual di bawah, aplikasi tetap jalan.','err');
+    }
+  }
+}
+
+function resizeImage(file, maxSide){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>{
+      const im=new Image();
+      im.onload=()=>{
+        const sc=Math.min(1, maxSide/Math.max(im.width,im.height));
+        const c=document.createElement('canvas');
+        c.width=Math.round(im.width*sc); c.height=Math.round(im.height*sc);
+        c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+        res(c.toDataURL('image/jpeg',0.85));
+      };
+      im.onerror=rej; im.src=r.result;
+    };
+    r.onerror=rej; r.readAsDataURL(file);
+  });
+}
+
+/* ================= TAHAP 1: VISION (essence capture) ================= */
+async function captionImage(dataUrl, instruction){
+  const body={ model:'openai', messages:[{ role:'user', content:[
+    {type:'text',text:instruction},
+    {type:'image_url',image_url:{url:dataUrl}}
+  ]}]};
+  const endpoints=[
+    'https://gen.pollinations.ai/v1/chat/completions?referrer='+REFERRER,
+    'https://text.pollinations.ai/openai?referrer='+REFERRER
+  ];
+  let lastErr;
+  for(const url of endpoints){
+    try{
+      const headers={'Content-Type':'application/json'};
+      if(apiKey()) headers['Authorization']='Bearer '+apiKey();
+      const resp=await fetch(url,{method:'POST',headers,body:JSON.stringify(body)});
+      if(resp.status===429){
+        await sleep(16000);                          // rate limit anonim — tunggu lalu coba lagi sekali
+        const r2=await fetch(url,{method:'POST',headers,body:JSON.stringify(body)});
+        if(!r2.ok) throw new Error('HTTP '+r2.status);
+        return extractText(await r2.json());
+      }
+      if(!resp.ok) throw new Error('HTTP '+resp.status);
+      return extractText(await resp.json());
+    }catch(e){ lastErr=e; }
+  }
+  throw lastErr || new Error('Semua endpoint vision gagal');
+}
+function extractText(data){
+  const msg=data?.choices?.[0]?.message;
+  let txt=msg?.content;
+  if(Array.isArray(msg?.content_blocks))
+    txt = txt || msg.content_blocks.filter(b=>b.type==='text').map(b=>b.text).join(' ');
+  if(typeof txt!=='string'||!txt.trim()) throw new Error('Respons kosong');
+  return txt.trim().replace(/^["']|["']$/g,'');
+}
+
+/* ===================== TAHAP 1.5: RACIK PROMPT ===================== */
+function composePrompt(){
+  const s=state.slots, parts=[];
+  if(s.subject.caption) parts.push(s.subject.caption);
+  if(s.scene.caption)   parts.push('set in '+s.scene.caption);
+  if(s.style.caption)   parts.push('rendered in the style of '+s.style.caption);
+  const extra=$('extraDetail').value.trim();
+  if(extra) parts.push(extra);
+  let p=parts.join(', ');
+  if($('flatVector').checked && p){
+    p+='. Simple flat vector illustration, minimalist clean design, solid colors, white background, modern detailed scalable vector style, perfect for stock illustration';
+  }
+  return p;
+}
+function autoCompose(){ if(!state.composedByUser) $('finalPrompt').value=composePrompt(); }
+$('finalPrompt').addEventListener('input',()=>{ state.composedByUser=true; });
+$('btnCompose').addEventListener('click',()=>{ state.composedByUser=false; $('finalPrompt').value=composePrompt(); });
+$('extraDetail').addEventListener('input', autoCompose);
+$('flatVector').addEventListener('change', ()=>{ state.composedByUser=false; autoCompose(); });
+
+/* ============ TAHAP 2: GENERATE — ANTREAN BERURUTAN ============ */
+/* Server anonim membatasi ±1 request/15 dtk → job diproses satu-satu. */
+const queue=[]; let working=false;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+function buildImageUrls(prompt,w,h,seed){
+  const q=new URLSearchParams({width:w,height:h,seed:String(seed),model:imgModel(),referrer:REFERRER});
+  if(apiKey()) q.set('key',apiKey());
+  const enc=encodeURIComponent(prompt);
+  return [
+    `https://gen.pollinations.ai/image/${enc}?${q}`,
+    `https://image.pollinations.ai/prompt/${enc}?${q}`
+  ];
+}
+
+function updatePill(){
+  const pill=$('queuePill');
+  if(queue.length>0||working){
+    pill.classList.add('on');
+    pill.textContent='Antrean: '+(queue.length+(working?1:0))+' gambar';
+  } else pill.classList.remove('on');
+}
+
+async function worker(){
+  if(working) return; working=true;
+  while(queue.length){
+    const job=queue.shift(); updatePill();
+    await runJob(job);
+    if(queue.length) await countdown(genDelayMs(), job);   // jeda hormati rate limit
+  }
+  working=false; updatePill();
+  $('genStatus').textContent='✓ Antrean selesai.'; $('genStatus').className='gen-status';
+}
+
+async function countdown(ms,job){
+  const end=Date.now()+ms;
+  while(Date.now()<end){
+    const s=Math.ceil((end-Date.now())/1000);
+    $('genStatus').textContent=`Jeda rate-limit: gambar berikutnya dalam ${s} dtk… (antrean: ${queue.length})`;
+    await sleep(500);
+  }
+}
+
+async function runJob(job){
+  const {prompt,w,h,seed,card}=job;
+  const wrap=card.querySelector('.img-wrap');
+  wrap.innerHTML='<div class="wait"><div class="spin" role="status"></div>FLUX sedang melukis…<br>(10–60 detik)</div>';
+  $('genStatus').textContent='Menggenerate seed '+seed+'…'; $('genStatus').className='gen-status';
+
+  const urls=buildImageUrls(prompt,w,h,seed);
+  let lastErr='';
+  for(const url of urls){
+    for(let attempt=1; attempt<=3; attempt++){
+      try{
+        const resp=await fetch(url);
+        if(resp.status===429){
+          const ra=parseInt(resp.headers.get('retry-after'))||18;
+          lastErr='429 rate limit';
+          wrap.querySelector('.wait').innerHTML=`<div class="spin"></div>Server padat (429).<br>Coba lagi dalam ${ra} dtk… (percobaan ${attempt}/3)`;
+          await sleep(ra*1000); continue;
+        }
+        if(resp.status===422){ fail(card,'Prompt ditolak moderasi konten (422). Ubah kata-kata prompt lalu coba lagi.'); return; }
+        if(!resp.ok){ lastErr='HTTP '+resp.status; break; }   // endpoint ini gagal → coba endpoint fallback
+        const blob=await resp.blob();
+        if(!blob.type.startsWith('image/')) { lastErr='bukan gambar'; break; }
+        showImage(card,blob,prompt,seed);
+        return;
+      }catch(e){ lastErr=e.message||'jaringan'; break; }
+    }
+  }
+  fail(card,'Gagal ('+lastErr+'). Klik ↻ Variasi untuk mencoba lagi.');
+}
+
+function showImage(card,blob,prompt,seed){
+  const wrap=card.querySelector('.img-wrap');
+  const obj=URL.createObjectURL(blob);
+  const img=new Image();
+  img.alt=prompt.slice(0,120); img.src=obj;
+  wrap.innerHTML=''; wrap.appendChild(img);
+  card.dataset.blobUrl=obj; card.dataset.ready='1';
+}
+function fail(card,msg){
+  card.querySelector('.img-wrap').innerHTML='<div class="fail">'+msg+'</div>';
+}
+
+$('btnGenerate').addEventListener('click',()=>enqueueBatch());
+$('btnDice').addEventListener('click',()=>enqueueBatch());
+
+function enqueueBatch(){
+  const prompt=$('finalPrompt').value.trim();
+  const status=$('genStatus');
+  if(!prompt){
+    status.textContent='Prompt kosong — isi minimal satu slot atau tulis prompt langsung di Mixer.';
+    status.className='gen-status err'; return;
+  }
+  $('emptyFeed')?.remove();
+  const [w,h]=$('aspect').value.split('x').map(Number);
+  const n=parseInt($('batch').value,10);
+  for(let i=0;i<n;i++){
+    const seed=Math.floor(Math.random()*1e9);
+    const card=makeCard(prompt,w,h,seed);
+    queue.push({prompt,w,h,seed,card});
+  }
+  updatePill(); worker();
+}
+
+function makeCard(prompt,w,h,seed){
+  const feed=$('feed');
+  const card=document.createElement('div');
+  card.className='card';
+  card.innerHTML=`
+    <div class="img-wrap"><div class="wait">Menunggu giliran antrean…</div></div>
+    <div class="card-meta">
+      <div class="prompt-snip"></div>
+      <span class="seed">seed ${seed} · ${w}×${h} · ${imgModel()}</span>
+      <div class="card-actions">
+        <button class="btn small teal act-dl">⬇ Unduh</button>
+        <button class="btn small act-re">↻ Variasi</button>
+        <button class="btn small act-use">✎ Pakai prompt</button>
+      </div>
+    </div>`;
+  card.querySelector('.prompt-snip').textContent=prompt;
+  feed.prepend(card);
+
+  card.querySelector('.act-dl').addEventListener('click',()=>{
+    if(card.dataset.ready!=='1') return alert('Gambar belum jadi.');
+    const a=document.createElement('a');
+    a.href=card.dataset.blobUrl; a.download=`ras-project_${seed}.jpg`; a.click();
+  });
+  card.querySelector('.act-re').addEventListener('click',()=>{
+    const newSeed=Math.floor(Math.random()*1e9);
+    const nc=makeCard(prompt,w,h,newSeed);
+    queue.push({prompt,w,h,seed:newSeed,card:nc});
+    updatePill(); worker();
+  });
+  card.querySelector('.act-use').addEventListener('click',()=>{
+    $('finalPrompt').value=prompt; state.composedByUser=true;
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+  return card;
+}
+
+/* ============================ SETTINGS ============================ */
+const modal=$('settingsModal');
+$('btnSettings').addEventListener('click',()=>{
+  $('apiKey').value=apiKey();
+  $('imgModel').value=localStorage.getItem(LS.model)||'';
+  $('genDelay').value=localStorage.getItem(LS.delay)||'';
+  modal.showModal();
+});
+$('btnCloseSettings').addEventListener('click',()=>modal.close());
+$('btnSaveSettings').addEventListener('click',()=>{
+  const k=$('apiKey').value.trim(), m=$('imgModel').value.trim(), d=$('genDelay').value.trim();
+  k?localStorage.setItem(LS.key,k):localStorage.removeItem(LS.key);
+  m?localStorage.setItem(LS.model,m):localStorage.removeItem(LS.model);
+  d?localStorage.setItem(LS.delay,d):localStorage.removeItem(LS.delay);
+  modal.close();
+});
+</script>
+</body>
+</html>
